@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حجز موعد صالون الحلاقة</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js";
+
+    // تهيئة Firebase
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
+    const storage = getStorage(app);
+
+    // إدارة حالة التطبيق
+    let currentUser = null;
+    let currentBarberId = null;
+
+    // عند تحميل الصفحة
+    window.onload = () => {
+      checkAuthState();
+    };
+
+    // التحقق من حالة المصادقة
+    function checkAuthState() {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUser = user;
+          const userType = localStorage.getItem("userType");
+          
+          if (userType === "barber") {
+            currentBarberId = user.uid;
+            showPanel("barber-panel");
+            loadBarberWaitlist();
+          } else {
+            showPanel("client-booking");
+            loadBarbers();
+          }
+        } else {
+          showPanel("welcome");
+        }
+      });
+    }
+
+    // عرض لوحة معينة وإخفاء البقية
+    function showPanel(panelId) {
+      document.querySelectorAll(".panel").forEach(panel => {
+        panel.style.display = "none";
+      });
+      document.getElementById(panelId).style.display = "block";
+      
+      // إضافة عنوان للوحة الحالية
+      if (panelId !== "welcome") {
+        document.getElementById("currentPanelTitle").textContent = 
+          document.getElementById(panelId).querySelector("h2").textContent;
+      }
+    }
+
+    // اختيار نوع المستخدم
+    window.selectUser = (userType) => {
+      localStorage.setItem("userType", userType);
+      
+      if (userType === 'client') {
+        showPanel('client-booking');
+        loadBarbers();
+      } else {
+        showPanel('barber-login');
+      }
+    };
+
+    // تسجيل دخول أو تسجيل حلاق جديد
+    window.registerOrLogin = async () => {
+      const email = document.getElementById("barberEmail").value;
+      const password = document.getElementById("barberPassword").value;
+      const name = document.getElementById("barberName").value;
+      const image = document.getElementById("barberImage").files[0];
+
+      try {
+        // محاولة تسجيل حساب جديد
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+
+        // رفع صورة الحلاق إذا وجدت
+        let imageUrl = "https://via.placeholder.com/100";
+        if (image) {
+          const imageRef = sRef(storage, 'barbers/' + uid);
+          await uploadBytes(imageRef, image);
+          imageUrl = await getDownloadURL(imageRef);
+        }
+
+        // حفظ بيانات الحلاق في قاعدة البيانات
+        await set(ref(db, `barbers/${uid}`), {
+          name,
+          email,
+          imageUrl,
+          status: "مفتوح"
+        });
+
+        localStorage.setItem("userType", "barber");
+        currentBarberId = uid;
+        showPanel("barber-panel");
+        loadBarberWaitlist();
+      } catch (error) {
+        // إذا فشل التسجيل، حاول تسجيل الدخول
+        if (error.code === 'auth/email-already-in-use') {
+          try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            localStorage.setItem("userType", "barber");
+            currentBarberId = userCredential.user.uid;
+            showPanel("barber-panel");
+            loadBarberWaitlist();
+          } catch (loginError) {
+            alert("خطأ في تسجيل الدخول: " + loginError.message);
+          }
+        } else {
+          alert("خطأ في التسجيل: " + error.message);
+        }
+      }
+    };
+
+    // تحميل قائمة الحلاقين
+    async function loadBarbers() {
+      const container = document.getElementById("barberCards");
+      container.innerHTML = "<p>جاري تحميل الحلاقين...</p>";
+      
+      const barbersRef = ref(db, 'barbers');
+      onValue(barbersRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          container.innerHTML = "<p>لا يوجد حلاقون متاحون حالياً</p>";
+          return;
+        }
+
+        container.innerHTML = "";
+        snapshot.forEach((child) => {
+          const barber = child.val();
+          const barberId = child.key;
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <img src="${barber.imageUrl || 'https://via.placeholder.com/100'}" alt="${barber.name}">
+            <h3>${barber.name}</h3>
+            <p>الحالة: ${barber.status}</p>
+            <p>عدد الحاجزين: <span id="count-${barberId}">0</span></p>
+            <button onclick="bookAppointment('${barberId}', '${barber.name.replace(/'/g, "\\'")}')">احجز موعد</button>
+            <button onclick="viewWaitlist('${barberId}')">عرض قائمة الانتظار</button>
+          `;
+          container.appendChild(card);
+
+          // تحديث عدد الحاجزين
+          onValue(ref(db, `waitlist/${barberId}`), (waitSnap) => {
+            document.getElementById(`count-${barberId}`).textContent = waitSnap.size || 0;
+          });
+        });
+      }, (error) => {
+        container.innerHTML = `<p>خطأ في تحميل البيانات: ${error.message}</p>`;
+      });
+    }
+
+    // حجز موعد
+    window.bookAppointment = async (barberId, barberName) => {
+      const clientName = prompt("أدخل اسمك:");
+      if (!clientName) return;
+
+      const clientPhone = prompt("أدخل رقم هاتفك:");
+      if (!clientPhone) return;
+
+      try {
+        await push(ref(db, `waitlist/${barberId}`), {
+          name: clientName,
+          phone: clientPhone,
+          timestamp: Date.now()
+        });
+        alert(`تم الحجز بنجاح عند ${barberName}`);
+      } catch (error) {
+        alert("حدث خطأ أثناء الحجز: " + error.message);
+      }
+    };
+
+    // عرض قائمة الانتظار للعميل
+    window.viewWaitlist = (barberId) => {
+      showPanel("client-waitlist");
+      const list = document.getElementById("clientWaitlist");
+      list.innerHTML = "<p>جاري تحميل قائمة الانتظار...</p>";
+      
+      onValue(ref(db, `waitlist/${barberId}`), (snapshot) => {
+        if (!snapshot.exists()) {
+          list.innerHTML = "<p>لا يوجد عملاء في قائمة الانتظار</p>";
+          return;
+        }
+
+        list.innerHTML = "";
+        const clients = [];
+        
+        snapshot.forEach((child) => {
+          clients.push({
+            id: child.key,
+            ...child.val()
+          });
+        });
+
+        // ترتيب العملاء حسب وقت الحجز
+        clients.sort((a, b) => a.timestamp - b.timestamp);
+        
+        clients.forEach((client, index) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <span>${index + 1}. ${client.name} - ${client.phone}</span>
+          `;
+          list.appendChild(li);
+        });
+      });
+    };
+
+    // تحميل قائمة انتظار الحلاق
+    function loadBarberWaitlist() {
+      const list = document.getElementById("barberWaitlist");
+      list.innerHTML = "<p>جاري تحميل قائمة الانتظار...</p>";
+      
+      onValue(ref(db, `waitlist/${currentBarberId}`), (snapshot) => {
+        if (!snapshot.exists()) {
+          list.innerHTML = "<p>لا يوجد عملاء في قائمة الانتظار</p>";
+          return;
+        }
+
+        list.innerHTML = "";
+        const clients = [];
+        
+        snapshot.forEach((child) => {
+          clients.push({
+            id: child.key,
+            ...child.val()
+          });
+        });
+
+        // ترتيب العملاء حسب وقت الحجز
+        clients.sort((a, b) => a.timestamp - b.timestamp);
+        
+        clients.forEach((client, index) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <span>${index + 1}. ${client.name} - ${client.phone}</span>
+            <button onclick="removeFromWaitlist('${client.id}')">إكتمل</button>
+          `;
+          list.appendChild(li);
+        });
+      });
+    }
+
+    // إزالة عميل من قائمة الانتظار
+    window.removeFromWaitlist = (clientId) => {
+      if (confirm("هل أكملت خدمة هذا العميل؟")) {
+        remove(ref(db, `waitlist/${currentBarberId}/${clientId}`))
+          .catch(error => alert("حدث خطأ: " + error.message));
+      }
+    };
+
+    // تسجيل الخروج
+    window.logout = () => {
+      signOut(auth).then(() => {
+        localStorage.removeItem("userType");
+        currentUser = null;
+        currentBarberId = null;
+        showPanel("welcome");
+      }).catch(error => {
+        alert("حدث خطأ أثناء تسجيل الخروج: " + error.message);
+      });
+    };
+
+    // العودة إلى لوحة الحجز
+    window.backToBooking = () => {
+      showPanel("client-booking");
+      loadBarbers();
+    };
+  </script>
+  <style>
+    :root {
+      --primary-color: #4a6fa5;
+      --secondary-color: #166088;
+      --accent-color: #4fc3f7;
+      --light-color: #f8f9fa;
+      --dark-color: #343a40;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .panel {
+      display: none;
+      background-color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      padding: 20px;
+      margin-top: 20px;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    h1, h2, h3 {
+      color: var(--secondary-color);
+      text-align: center;
+      margin-top: 0;
+    }
+    
+    h2 {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: 16px;
+      padding: 10px 15px;
+      border-radius: var(--border-radius);
+      border: 1px solid #ddd;
+      width: 100%;
+      margin-bottom: 15px;
+      transition: all 0.3s;
+    }
+    
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    button:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button.secondary {
+      background-color: var(--light-color);
+      color: var(--dark-color);
+    }
+    
+    button.danger {
+      background-color: var(--danger-color);
+    }
+    
+    .card {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: var(--box-shadow);
+      text-align: center;
+    }
+    
+    .card img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid var(--accent-color);
+      margin-bottom: 10px;
+    }
+    
+    .card h3 {
+      margin: 10px 0;
+      color: var(--secondary-color);
+    }
+    
+    .card p {
+      margin: 5px 0;
+      color: #666;
+    }
+    
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    li {
+      background-color: var(--light-color);
+      margin-bottom: 10px;
+      padding: 12px 15px;
+      border-radius: var(--border-radius);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    li span {
+      flex: 1;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .header h2 {
+      margin: 0;
+      border: none;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .panel {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- لوحة الترحيب -->
+    <div id="welcome" class="panel">
+      <h1>مرحباً بكم في صالون الحلاقة</h1>
+      <h2>من أنت؟</h2>
+      <button onclick="selectUser('client')">عميل</button>
+      <button onclick="selectUser('barber')">حلاق</button>
+    </div>
+
+    <!-- لوحة تسجيل دخول الحلاق -->
+    <div id="barber-login" class="panel">
+      <h2>تسجيل دخول الحلاق</h2>
+      <input id="barberEmail" type="email" placeholder="البريد الإلكتروني" required>
+      <input id="barberPassword" type="password" placeholder="كلمة المرور" required>
+      <input id="barberName" placeholder="اسم الصالون" required>
+      <label for="barberImage">صورة الصالون (اختياري)</label>
+      <input id="barberImage" type="file" accept="image/*">
+      <button onclick="registerOrLogin()">تسجيل الدخول / إنشاء حساب</button>
+      <button class="secondary" onclick="showPanel('welcome')">رجوع</button>
+    </div>
+
+    <!-- لوحة تحكم الحلاق -->
+    <div id="barber-panel" class="panel">
+      <div class="header">
+        <h2>لوحة تحكم الحلاق</h2>
+        <button class="danger" onclick="logout()">تسجيل الخروج</button>
+      </div>
+      
+      <h3>قائمة الانتظار</h3>
+      <ul id="barberWaitlist"></ul>
+    </div>
+
+    <!-- لوحة حجز العملاء -->
+    <div id="client-booking" class="panel">
+      <div class="header">
+        <h2>اختر حلاقك</h2>
+        <button class="secondary" onclick="logout()">تسجيل الخروج</button>
+      </div>
+      
+      <div id="barberCards"></div>
+    </div>
+
+    <!-- لوحة عرض قائمة الانتظار للعميل -->
+    <div id="client-waitlist" class="panel">
+      <div class="header">
+        <h2>قائمة الانتظار</h2>
+        <button class="secondary" onclick="backToBooking()">رجوع</button>
+      </div>
+      
+      <ul id="clientWaitlist"></ul>
+    </div>
+  </div>
+</body>
+</html>
