@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TS - TikTok Style Shorts</title>
+<title>TS - Shorts Free</title>
 <style>
 :root {
   --bg:#000;
@@ -21,7 +21,7 @@ body {
   color:var(--text);
   overflow:hidden;
   height:100vh;
-  font-family:Arial, sans-serif;
+  font-family:Arial;
 }
 header {
   position:fixed;
@@ -60,34 +60,16 @@ header {
 // Dark / Light
 function toggleTheme(){ document.body.classList.toggle("light"); }
 
-// فيديوهات ومصادر
-let videos = [], index=0;
-
-// جلب الفيديوهات من TikTok Scraper مجاني + Pexels + Pixabay
-async function loadVideos(){
-  try{
-    // 1) TikTok Trending Free Scraper
-    let tiktokRes = await fetch("https://tiktok-scraper-proxy.vercel.app/trending"); 
-    let tiktokData = await tiktokRes.json();
-    tiktokData.forEach(v=>videos.push(v.videoUrl));
-
-    // 2) Pexels Videos (مثال: 5 فيديوهات مجانية)
-    let pexelsRes = await fetch("https://api.pexels.com/videos/popular?per_page=5",{
-      headers:{Authorization:"YOUR_PEXELS_API_KEY"}
-    });
-    let pexelsData = await pexelsRes.json();
-    pexelsData.videos.forEach(v=>videos.push(v.video_files[0].link));
-
-    // 3) Pixabay Videos (مثال: 5 فيديوهات مجانية)
-    let pixRes = await fetch("https://pixabay.com/api/videos/?key=YOUR_PIXABAY_API_KEY&per_page=5");
-    let pixData = await pixRes.json();
-    pixData.hits.forEach(v=>videos.push(v.videos.medium.url));
-
-    showVideo(0);
-  } catch(e){
-    alert("خطأ في تحميل الفيديوهات. تأكد من مفتاح Pexels و Pixabay API");
-  }
-}
+// فيديوهات مجانية جاهزة
+let videos = [
+  // Pexels
+  "https://player.vimeo.com/external/430450414.hd.mp4?s=40f5f64c1b66c734f3f1d19f6a7cd322f847b47b&profile_id=174",
+  "https://player.vimeo.com/external/449001604.hd.mp4?s=206d06f2b37f85e1d446a7889ffbdbfa8a0c1c20&profile_id=174",
+  // Pixabay
+  "https://cdn.pixabay.com/vimeo/431564119/pexels-video-431564119.mp4?width=1280&hash=872ad344f07dc4d7b02f7b9f18c5e9f0",
+  "https://cdn.pixabay.com/vimeo/427877225/pexels-video-427877225.mp4?width=1280&hash=1f2b5e7d6c9e08a4d6abf0a0f3c7e2c5"
+];
+let index = 0;
 
 // عرض فيديو
 function showVideo(i){
@@ -104,7 +86,8 @@ document.addEventListener("touchend",e=>{
   if(endY-startY>50){ if(index>0) showVideo(index-1);}
 });
 
-loadVideos();
+// بدء التشغيل
+showVideo(0);
 </script>
 </body>
 </html>
