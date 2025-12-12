@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TS - Trending Shorts</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
     :root {
@@ -11,6 +12,7 @@
         --text: #ffffff;
         --card: #1a1a1a;
         --accent: #0f9dff;
+        --shadow: rgba(0, 0, 0, 0.5);
     }
 
     body.light {
@@ -18,6 +20,11 @@
         --text: #111;
         --card: #ffffff;
         --accent: #0077ff;
+        --shadow: rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+        box-sizing: border-box;
     }
 
     body {
@@ -27,25 +34,47 @@
         margin: 0;
         padding: 0;
         transition: 0.3s;
+        overflow-x: hidden;
     }
 
+    /* تحسين الهيدر */
     header {
-        padding: 15px 20px;
+        padding: 12px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         background: var(--card);
-        box-shadow: 0 2px 15px rgba(0,0,0,0.4);
+        box-shadow: 0 2px 15px var(--shadow);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
     .logo {
-        font-size: 26px;
+        font-size: 28px;
         font-weight: bold;
         color: var(--accent);
         letter-spacing: 1px;
     }
 
-    .toggle-btn {
+    .subtitle {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .toggle-btn, .refresh-btn {
         padding: 8px 14px;
         border-radius: 8px;
         background: var(--accent);
@@ -55,81 +84,349 @@
         font-weight: bold;
         cursor: pointer;
         transition: 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
+    .toggle-btn:hover, .refresh-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+    }
+
+    /* تحسين منطقة الفيديوهات */
     #videos {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
         padding: 20px;
+        width: 100%;
+        max-width: 100%;
     }
 
     .card {
         background: var(--card);
-        padding: 10px;
-        border-radius: 14px;
+        border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 0 10px rgba(0,0,0,0.25);
-        transition: 0.3s;
+        box-shadow: 0 4px 12px var(--shadow);
+        transition: transform 0.3s, box-shadow 0.3s;
+        position: relative;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px var(--shadow);
+    }
+
+    .video-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 177.78%; /* نسبة 16:9 للشورتات */
+        height: 0;
+        overflow: hidden;
+        background: #000;
     }
 
     iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
-        height: 360px;
+        height: 100%;
         border: none;
         border-radius: 12px;
+    }
+
+    .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        gap: 20px;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(15, 157, 255, 0.2);
+        border-top: 4px solid var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .video-info {
+        padding: 12px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .trending-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: #ff0000;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 10;
+    }
+
+    /* تحسين للهواتف */
+    @media (max-width: 768px) {
+        #videos {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            padding: 12px;
+        }
+        
+        .logo {
+            font-size: 24px;
+        }
+        
+        .subtitle {
+            display: none;
+        }
+        
+        .video-info {
+            display: none;
+        }
+    }
+
+    @media (max-width: 480px) {
+        #videos {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        }
+    }
+
+    /* شريط التقدم */
+    .progress-bar {
+        height: 4px;
+        background: var(--accent);
+        width: 0%;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 101;
+        transition: width 0.3s;
     }
 </style>
 </head>
 
 <body>
+<div class="progress-bar" id="progressBar"></div>
 
 <header>
-    <div class="logo">TS</div>
-    <button class="toggle-btn" onclick="toggleTheme()">☀ / 🌙</button>
+    <div class="logo-container">
+        <div class="logo">TS</div>
+        <div class="subtitle">Trending Shorts</div>
+    </div>
+    
+    <div class="controls">
+        <button class="refresh-btn" onclick="loadTrending()" id="refreshBtn">
+            <i class="fas fa-sync-alt"></i> تحديث
+        </button>
+        <button class="toggle-btn" onclick="toggleTheme()">
+            <i class="fas fa-sun"></i> / <i class="fas fa-moon"></i>
+        </button>
+    </div>
 </header>
 
-<h2 style="text-align:center;margin-top:20px;">أحدث الترند</h2>
+<h2 style="text-align:center;margin:20px 0 10px 0;font-size: 1.5rem;">🔥 أحدث الترند من كل مكان</h2>
 
-<div id="videos">جارٍ تحميل الفيديوهات...</div>
+<div id="videos">
+    <div class="loading">
+        <div class="spinner"></div>
+        <div>جاري تحميل أحدث الشورتات...</div>
+    </div>
+</div>
 
 <script>
+// تحسينات الأداء
+let isLoading = false;
+const cacheDuration = 5 * 60 * 1000; // 5 دقائق
+let lastLoadTime = 0;
+
+// تحديث شريط التقدم
+window.addEventListener('scroll', () => {
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+    document.getElementById("progressBar").style.width = scrolled + "%";
+});
+
 // تبديل الوضع
 function toggleTheme() {
     document.body.classList.toggle("light");
+    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
 }
 
-// التحميل من RSS (ترند يوتيوب الرسمي)
+// تحميل الفيديوهات من مصادر متعددة
 async function loadTrending() {
+    if (isLoading) return;
+    
+    const now = Date.now();
+    if (now - lastLoadTime < 10000) { // منع التحديث المتكرر
+        return;
+    }
+    
+    isLoading = true;
+    lastLoadTime = now;
+    
+    const container = document.getElementById("videos");
+    const refreshBtn = document.getElementById("refreshBtn");
+    
+    container.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>جاري تحميل أحدث الشورتات...</div>
+        </div>
+    `;
+    
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحديث';
+    refreshBtn.disabled = true;
+    
     try {
-        const url = "https://api.allorigins.win/raw?url=https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-";
-        const res = await fetch(url);
-        const xml = await res.text();
-
-        const parser = new DOMParser();
-        const data = parser.parseFromString(xml, "text/xml");
-
-        const entries = data.getElementsByTagName("entry");
-
-        const container = document.getElementById("videos");
-        container.innerHTML = "";
-
-        for (let i = 0; i < entries.length; i++) {
-            const link = entries[i].getElementsByTagName("link")[0].getAttribute("href");
-
-            container.innerHTML += `
-                <div class="card">
-                    <iframe src="${link.replace("watch?v=", "embed/")}" allowfullscreen></iframe>
+        // مصادر متعددة للترند (يمكن إضافة المزيد)
+        const sources = [
+            "https://api.allorigins.win/raw?url=https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-", // ترند يوتيوب
+            "https://api.allorigins.win/raw?url=https://www.youtube.com/feeds/videos.xml?playlist_id=PLirAqAtl_h2r5g8xGajEwdXd3x1sZh8hC", // ترند آخر
+        ];
+        
+        let allVideos = [];
+        
+        // جلب الفيديوهات من جميع المصادر بالتوازي
+        const promises = sources.map(async (url, index) => {
+            try {
+                const res = await fetch(url);
+                const xml = await res.text();
+                const parser = new DOMParser();
+                const data = parser.parseFromString(xml, "text/xml");
+                const entries = data.getElementsByTagName("entry");
+                
+                // أخذ أول 4 فيديوهات من كل مصدر
+                for (let i = 0; i < Math.min(4, entries.length); i++) {
+                    const link = entries[i].getElementsByTagName("link")[0]?.getAttribute("href");
+                    const title = entries[i].getElementsByTagName("title")[0]?.textContent || "فيديو ترند";
+                    
+                    if (link && link.includes("youtube.com")) {
+                        allVideos.push({
+                            link: link.replace("watch?v=", "embed/"),
+                            title: title,
+                            source: index
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn(`خطأ في تحميل المصدر ${index}:`, e);
+            }
+        });
+        
+        await Promise.allSettled(promises);
+        
+        // خلط الفيديوهات عشوائياً
+        allVideos = shuffleArray(allVideos);
+        
+        // عرض الفيديوهات
+        container.innerHTML = '';
+        
+        if (allVideos.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--accent); margin-bottom: 20px;"></i>
+                    <h3>⚠️ لم يتم تحميل أي فيديوهات</h3>
+                    <p>يرجى المحاولة مرة أخرى أو التحقق من اتصالك بالإنترنت</p>
                 </div>
             `;
+        } else {
+            allVideos.forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="trending-badge">🔥 ترند</div>
+                    <div class="video-container">
+                        <iframe 
+                            src="${video.link}?autoplay=0&modestbranding=1&rel=0" 
+                            allowfullscreen 
+                            loading="lazy"
+                            title="${video.title}">
+                        </iframe>
+                    </div>
+                    <div class="video-info">
+                        ${video.title.length > 50 ? video.title.substring(0, 50) + '...' : video.title}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
-
-    } catch (e) {
-        document.getElementById("videos").innerHTML = "⚠ خطأ أثناء تحميل الترند";
+        
+        // تحسين التحميل البطيء للصور
+        document.querySelectorAll('iframe').forEach(iframe => {
+            iframe.addEventListener('load', function() {
+                this.style.opacity = '1';
+            });
+        });
+        
+    } catch (error) {
+        console.error('خطأ في تحميل الترند:', error);
+        container.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #ff4444; margin-bottom: 20px;"></i>
+                <h3>⚠️ خطأ أثناء تحميل الترند</h3>
+                <p>${error.message}</p>
+                <button class="toggle-btn" onclick="loadTrending()" style="margin-top: 20px;">
+                    <i class="fas fa-redo"></i> حاول مرة أخرى
+                </button>
+            </div>
+        `;
+    } finally {
+        isLoading = false;
+        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> تحديث';
+        refreshBtn.disabled = false;
     }
 }
 
-loadTrending();
+// دالة لخلط المصفوفة عشوائياً
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// تحميل الوضع المحفوظ
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'light') {
+    document.body.classList.add('light');
+}
+
+// التحميل التلقائي عند فتح الصفحة
+window.addEventListener('DOMContentLoaded', () => {
+    // تحميل الفيديوهات فوراً
+    loadTrending();
+    
+    // تحديث تلقائي كل 3 دقائق إذا كانت الصفحة مرئية
+    setInterval(() => {
+        if (!document.hidden && !isLoading) {
+            loadTrending();
+        }
+    }, 3 * 60 * 1000);
+});
+
+// تحسين الأداء عند التبديل بين التبويبات
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - lastLoadTime > cacheDuration) {
+        loadTrending();
+    }
+});
 </script>
 
 </body>
