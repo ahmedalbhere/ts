@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TS - Shorts Free</title>
+<title>TS - Shorts</title>
 <style>
 :root {
   --bg:#000;
@@ -21,7 +21,7 @@ body {
   color:var(--text);
   overflow:hidden;
   height:100vh;
-  font-family:Arial;
+  font-family:Arial, sans-serif;
 }
 header {
   position:fixed;
@@ -60,16 +60,42 @@ header {
 // Dark / Light
 function toggleTheme(){ document.body.classList.toggle("light"); }
 
-// فيديوهات مجانية جاهزة
-let videos = [
-  // Pexels
-  "https://player.vimeo.com/external/430450414.hd.mp4?s=40f5f64c1b66c734f3f1d19f6a7cd322f847b47b&profile_id=174",
-  "https://player.vimeo.com/external/449001604.hd.mp4?s=206d06f2b37f85e1d446a7889ffbdbfa8a0c1c20&profile_id=174",
-  // Pixabay
-  "https://cdn.pixabay.com/vimeo/431564119/pexels-video-431564119.mp4?width=1280&hash=872ad344f07dc4d7b02f7b9f18c5e9f0",
-  "https://cdn.pixabay.com/vimeo/427877225/pexels-video-427877225.mp4?width=1280&hash=1f2b5e7d6c9e08a4d6abf0a0f3c7e2c5"
-];
-let index = 0;
+let videos = [], index=0;
+
+// جلب الفيديوهات من YouTube RSS (ترند) + Pexels + Pixabay
+async function loadVideos(){
+  try{
+    // ----------------------
+    // 1) YouTube Trending RSS
+    // ----------------------
+    const ytRSS = "https://api.codetabs.com/v1/proxy/?quest=https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-";
+    const resYt = await fetch(ytRSS);
+    const xmlYt = await resYt.text();
+    const parser = new DOMParser();
+    const data = parser.parseFromString(xmlYt,"text/xml");
+    const entries = data.getElementsByTagName("entry");
+    for(let i=0;i<entries.length;i++){
+      let link = entries[i].getElementsByTagName("link")[0].getAttribute("href");
+      videos.push(link.replace("watch?v=","embed/"));
+    }
+
+    // ----------------------
+    // 2) Pexels (مثال فيديوهات مجانية)
+    // ----------------------
+    videos.push("https://player.vimeo.com/external/430450414.hd.mp4?s=40f5f64c1b66c734f3f1d19f6a7cd322f847b47b&profile_id=174");
+    videos.push("https://player.vimeo.com/external/449001604.hd.mp4?s=206d06f2b37f85e1d446a7889ffbdbfa8a0c1c20&profile_id=174");
+
+    // ----------------------
+    // 3) Pixabay (مثال فيديوهات مجانية)
+    // ----------------------
+    videos.push("https://cdn.pixabay.com/vimeo/431564119/pexels-video-431564119.mp4?width=1280&hash=872ad344f07dc4d7b02f7b9f18c5e9f0");
+    videos.push("https://cdn.pixabay.com/vimeo/427877225/pexels-video-427877225.mp4?width=1280&hash=1f2b5e7d6c9e08a4d6abf0a0f3c7e2c5");
+
+    showVideo(0);
+  } catch(e){
+    alert("خطأ في تحميل الفيديوهات");
+  }
+}
 
 // عرض فيديو
 function showVideo(i){
@@ -87,7 +113,7 @@ document.addEventListener("touchend",e=>{
 });
 
 // بدء التشغيل
-showVideo(0);
+loadVideos();
 </script>
 </body>
 </html>
