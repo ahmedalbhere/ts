@@ -6,71 +6,130 @@
 <title>TS - Trending Shorts</title>
 
 <style>
+    :root {
+        --bg: #0d0d0d;
+        --text: #ffffff;
+        --card: #1a1a1a;
+        --accent: #0f9dff;
+    }
+
+    body.light {
+        --bg: #f6f6f6;
+        --text: #111;
+        --card: #ffffff;
+        --accent: #0077ff;
+    }
+
     body {
-        background:#000;
-        color:#fff;
-        font-family: Arial;
-        margin:0;
-        padding:15px;
-        text-align:center;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Segoe UI', Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        transition: 0.3s;
     }
-    h1 {
-        font-size:28px;
-        margin-bottom:10px;
-        color:#0f9dff;
+
+    header {
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--card);
+        box-shadow: 0 2px 15px rgba(0,0,0,0.4);
     }
+
+    .logo {
+        font-size: 26px;
+        font-weight: bold;
+        color: var(--accent);
+        letter-spacing: 1px;
+    }
+
+    .toggle-btn {
+        padding: 8px 14px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
     #videos {
-        display:grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap:15px;
-        margin-top:20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+        padding: 20px;
     }
+
+    .card {
+        background: var(--card);
+        padding: 10px;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0,0,0,0.25);
+        transition: 0.3s;
+    }
+
     iframe {
-        width:100%;
-        height:350px;
-        border-radius:12px;
-        border:none;
+        width: 100%;
+        height: 360px;
+        border: none;
+        border-radius: 12px;
     }
 </style>
 </head>
 
 <body>
 
-<h1>TS – Trending Shorts</h1>
-<p>أحدث الشورتس الرائجة لحظة بلحظة</p>
+<header>
+    <div class="logo">TS</div>
+    <button class="toggle-btn" onclick="toggleTheme()">☀ / 🌙</button>
+</header>
 
-<div id="videos">جارٍ جلب الترند...</div>
+<h2 style="text-align:center;margin-top:20px;">أحدث الترند</h2>
+
+<div id="videos">جارٍ تحميل الفيديوهات...</div>
 
 <script>
-// جلب الشورتس من جوجل بدون API
-async function loadShorts() {
-    const videosDiv = document.getElementById("videos");
+// تبديل الوضع
+function toggleTheme() {
+    document.body.classList.toggle("light");
+}
 
+// التحميل من RSS (ترند يوتيوب الرسمي)
+async function loadTrending() {
     try {
-        const query = "trending youtube shorts site:youtube.com/shorts";
-        const url = `https://api.allorigins.win/raw?url=https://www.google.com/search?q=${encodeURIComponent(query)}`;
-
+        const url = "https://api.allorigins.win/raw?url=https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-";
         const res = await fetch(url);
-        const html = await res.text();
+        const xml = await res.text();
 
-        // استخراج روابط الشورتس
-        const regex = /https:\/\/www\.youtube\.com\/shorts\/[A-Za-z0-9_-]+/g;
-        const links = [...new Set(html.match(regex))].slice(0, 20);
+        const parser = new DOMParser();
+        const data = parser.parseFromString(xml, "text/xml");
 
-        videosDiv.innerHTML = "";
+        const entries = data.getElementsByTagName("entry");
 
-        links.forEach(link => {
-            videosDiv.innerHTML += `
-                <iframe src="${link.replace('shorts','embed')}" allowfullscreen></iframe>
+        const container = document.getElementById("videos");
+        container.innerHTML = "";
+
+        for (let i = 0; i < entries.length; i++) {
+            const link = entries[i].getElementsByTagName("link")[0].getAttribute("href");
+
+            container.innerHTML += `
+                <div class="card">
+                    <iframe src="${link.replace("watch?v=", "embed/")}" allowfullscreen></iframe>
+                </div>
             `;
-        });
+        }
 
     } catch (e) {
-        videosDiv.innerHTML = "حدث خطأ في جلب الترند.";
+        document.getElementById("videos").innerHTML = "⚠ خطأ أثناء تحميل الترند";
     }
 }
 
-loadShorts();
+loadTrending();
 </script>
 
 </body>
