@@ -2,155 +2,225 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TS - Trending Shorts</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.css">
 
 <style>
     :root {
-        --bg: #0d0d0d;
+        --bg: #000000;
         --text: #ffffff;
-        --card: #1a1a1a;
-        --accent: #0f9dff;
-        --shadow: rgba(0, 0, 0, 0.5);
+        --card: #121212;
+        --accent: #ff0050;
+        --tiktok: #ff0050;
+        --instagram: #E4405F;
+        --youtube: #FF0000;
+        --shadow: rgba(0, 0, 0, 0.8);
     }
 
     body.light {
         --bg: #f6f6f6;
         --text: #111;
         --card: #ffffff;
-        --accent: #0077ff;
-        --shadow: rgba(0, 0, 0, 0.1);
+        --accent: #ff0050;
+        --shadow: rgba(0, 0, 0, 0.2);
     }
 
     * {
         box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+        height: 100%;
+        overflow: hidden;
     }
 
     body {
         background: var(--bg);
         color: var(--text);
-        font-family: 'Segoe UI', Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         margin: 0;
         padding: 0;
         transition: 0.3s;
-        overflow-x: hidden;
+        touch-action: pan-y;
     }
 
     /* تحسين الهيدر */
     header {
-        padding: 12px 20px;
+        padding: 10px 15px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: var(--card);
-        box-shadow: 0 2px 15px var(--shadow);
-        position: sticky;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        position: fixed;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        height: 50px;
     }
 
     .logo-container {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
 
     .logo {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: bold;
         color: var(--accent);
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
 
-    .subtitle {
-        font-size: 14px;
-        opacity: 0.8;
+    .app-name {
+        font-size: 16px;
+        font-weight: 600;
     }
 
     .controls {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
     }
 
-    .toggle-btn, .refresh-btn {
-        padding: 8px 14px;
-        border-radius: 8px;
-        background: var(--accent);
-        color: #fff;
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
         border: none;
-        font-size: 14px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.3s;
+        color: white;
+        font-size: 16px;
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
     }
 
-    .toggle-btn:hover, .refresh-btn:hover {
-        opacity: 0.9;
-        transform: translateY(-2px);
+    .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
     }
 
-    /* تحسين منطقة الفيديوهات */
-    #videos {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 16px;
-        padding: 20px;
+    /* منطقة الفيديوهات الرئيسية */
+    #videoContainer {
+        height: 100vh;
         width: 100%;
-        max-width: 100%;
+        position: relative;
+        overflow: hidden;
+        padding-top: 50px; /* تعويض الهيدر */
     }
 
-    .card {
-        background: var(--card);
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px var(--shadow);
-        transition: transform 0.3s, box-shadow 0.3s;
+    .swiper {
+        width: 100%;
+        height: 100%;
+    }
+
+    .swiper-slide {
+        display: flex;
+        justify-content: center;
+        align-items: center;
         position: relative;
     }
 
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px var(--shadow);
-    }
-
-    .video-container {
-        position: relative;
+    .video-card {
         width: 100%;
-        padding-bottom: 177.78%; /* نسبة 16:9 للشورتات */
-        height: 0;
+        height: 100%;
+        position: relative;
         overflow: hidden;
-        background: #000;
     }
 
-    iframe {
+    .video-player {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        border: none;
-        border-radius: 12px;
+        background: #000;
     }
 
-    .loading {
+    iframe.video-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .video-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px;
+        background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        color: white;
+        z-index: 10;
+    }
+
+    .video-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+
+    .video-meta {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .platform-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .platform-tiktok {
+        background: var(--tiktok);
+    }
+
+    .platform-instagram {
+        background: var(--instagram);
+    }
+
+    .platform-youtube {
+        background: var(--youtube);
+    }
+
+    .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 60vh;
+        z-index: 2000;
         gap: 20px;
     }
 
-    .spinner {
+    .loader {
         width: 50px;
         height: 50px;
-        border: 4px solid rgba(15, 157, 255, 0.2);
-        border-top: 4px solid var(--accent);
+        border: 3px solid rgba(255, 0, 80, 0.2);
+        border-top: 3px solid var(--accent);
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
@@ -160,274 +230,687 @@
         100% { transform: rotate(360deg); }
     }
 
-    .video-info {
-        padding: 12px;
+    .swipe-hint {
+        position: fixed;
+        bottom: 100px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 14px;
-        line-height: 1.4;
+        z-index: 100;
+        animation: fadeInOut 3s infinite;
+        pointer-events: none;
     }
 
-    .trending-badge {
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+
+    .video-actions {
         position: absolute;
-        top: 10px;
-        left: 10px;
-        background: #ff0000;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
+        right: 15px;
+        bottom: 100px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
         z-index: 10;
     }
 
-    /* تحسين للهواتف */
-    @media (max-width: 768px) {
-        #videos {
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 12px;
-            padding: 12px;
-        }
-        
-        .logo {
-            font-size: 24px;
-        }
-        
-        .subtitle {
-            display: none;
-        }
-        
-        .video-info {
-            display: none;
-        }
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        color: white;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
     }
 
-    @media (max-width: 480px) {
-        #videos {
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        }
+    .action-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        transition: 0.2s;
+    }
+
+    .action-btn:hover .action-icon {
+        transform: scale(1.1);
+        background: rgba(255, 0, 80, 0.3);
     }
 
     /* شريط التقدم */
+    .progress-container {
+        position: fixed;
+        top: 50px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 1000;
+    }
+
     .progress-bar {
-        height: 4px;
+        height: 100%;
         background: var(--accent);
         width: 0%;
+        transition: width 0.3s;
+    }
+
+    .error-screen {
         position: fixed;
         top: 0;
         left: 0;
-        z-index: 101;
-        transition: width 0.3s;
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        text-align: center;
+        z-index: 2000;
+        gap: 20px;
+    }
+
+    /* تحسينات للهواتف */
+    @media (max-width: 768px) {
+        header {
+            padding: 10px;
+        }
+        
+        .app-name {
+            display: none;
+        }
+        
+        .video-overlay {
+            padding: 15px;
+        }
+        
+        .video-title {
+            font-size: 14px;
+        }
+        
+        .video-meta {
+            font-size: 12px;
+        }
+        
+        .video-actions {
+            right: 10px;
+            bottom: 80px;
+        }
+        
+        .action-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+        }
+    }
+
+    /* تحسينات التمرير */
+    .swiper-pagination {
+        position: fixed !important;
+        top: 60px;
+        right: 15px;
+        width: auto !important;
+        left: auto !important;
+        bottom: auto !important;
+        z-index: 1000;
+    }
+
+    .swiper-pagination-bullet {
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 1;
+        width: 6px;
+        height: 6px;
+    }
+
+    .swiper-pagination-bullet-active {
+        background: var(--accent);
+        width: 8px;
+        height: 8px;
     }
 </style>
 </head>
 
 <body>
-<div class="progress-bar" id="progressBar"></div>
+<!-- شاشة التحميل -->
+<div class="loading-screen" id="loadingScreen">
+    <div class="loader"></div>
+    <div>جاري تحميل أحدث الشورتات...</div>
+</div>
 
+<!-- شريط التقدم -->
+<div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<!-- الهيدر -->
 <header>
     <div class="logo-container">
         <div class="logo">TS</div>
-        <div class="subtitle">Trending Shorts</div>
+        <div class="app-name">Trending Shorts</div>
     </div>
     
     <div class="controls">
-        <button class="refresh-btn" onclick="loadTrending()" id="refreshBtn">
-            <i class="fas fa-sync-alt"></i> تحديث
+        <button class="icon-btn" onclick="refreshVideos()" id="refreshBtn">
+            <i class="fas fa-sync-alt"></i>
         </button>
-        <button class="toggle-btn" onclick="toggleTheme()">
-            <i class="fas fa-sun"></i> / <i class="fas fa-moon"></i>
+        <button class="icon-btn" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+        <button class="icon-btn" onclick="toggleMute()" id="muteBtn">
+            <i class="fas fa-volume-up"></i>
         </button>
     </div>
 </header>
 
-<h2 style="text-align:center;margin:20px 0 10px 0;font-size: 1.5rem;">🔥 أحدث الترند من كل مكان</h2>
+<!-- تلميحة السحب -->
+<div class="swipe-hint" id="swipeHint">
+    <i class="fas fa-arrow-up"></i> اسحب لأعلى/أسفل للتنقل بين الفيديوهات
+</div>
 
-<div id="videos">
-    <div class="loading">
-        <div class="spinner"></div>
-        <div>جاري تحميل أحدث الشورتات...</div>
+<!-- منطقة الفيديوهات الرئيسية -->
+<div id="videoContainer">
+    <div class="swiper">
+        <div class="swiper-wrapper" id="videoSwiper">
+            <!-- سيتم إضافة الفيديوهات هنا ديناميكياً -->
+        </div>
     </div>
 </div>
 
+<!-- أزرار التحكم -->
+<div class="video-actions">
+    <button class="action-btn" onclick="likeVideo()">
+        <div class="action-icon">
+            <i class="far fa-heart"></i>
+        </div>
+        <span>إعجاب</span>
+    </button>
+    
+    <button class="action-btn" onclick="shareVideo()">
+        <div class="action-icon">
+            <i class="fas fa-share"></i>
+        </div>
+        <span>مشاركة</span>
+    </button>
+    
+    <button class="action-btn" onclick="downloadVideo()">
+        <div class="action-icon">
+            <i class="fas fa-download"></i>
+        </div>
+        <span>تحميل</span>
+    </button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js"></script>
 <script>
-// تحسينات الأداء
+// تهيئة المتغيرات
+let swiper = null;
+let currentVideoIndex = 0;
+let videos = [];
+let isMuted = true;
 let isLoading = false;
-const cacheDuration = 5 * 60 * 1000; // 5 دقائق
-let lastLoadTime = 0;
+const API_KEYS = {
+    tiktok: 'YOUR_TIKTOK_API_KEY', // استبدل بمفتاح TikTok API الحقيقي
+    instagram: 'YOUR_INSTAGRAM_API_KEY' // استبدل بمفتاح Instagram API الحقيقي
+};
 
-// تحديث شريط التقدم
-window.addEventListener('scroll', () => {
-    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    const scrolled = (winScroll / height) * 100;
-    document.getElementById("progressBar").style.width = scrolled + "%";
-});
+// بيانات تجريبية للفيديوهات (ستستبدل بالبيانات الحقيقية)
+const MOCK_VIDEOS = [
+    {
+        id: 1,
+        title: "شورت كوميدي مضحك جداً 😂",
+        platform: "tiktok",
+        url: "https://www.tiktok.com/embed/v2/7321234567890123456",
+        views: "2.5M",
+        likes: "350K"
+    },
+    {
+        id: 2,
+        title: "تحدي رقص ترند على تيك توك 💃",
+        platform: "tiktok",
+        url: "https://www.tiktok.com/embed/v2/7329876543210987654",
+        views: "5.1M",
+        likes: "890K"
+    },
+    {
+        id: 3,
+        title: "مهارات لا تصدق على Reels 🤯",
+        platform: "instagram",
+        url: "https://www.instagram.com/reel/C5jK8XqgP9L/embed",
+        views: "1.8M",
+        likes: "210K"
+    },
+    {
+        id: 4,
+        title: "يوتيوب شورتز - فكاهة سريعة 🎬",
+        platform: "youtube",
+        url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        views: "3.4M",
+        likes: "450K"
+    }
+];
 
-// تبديل الوضع
-function toggleTheme() {
-    document.body.classList.toggle("light");
-    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+// تهيئة Swiper
+function initSwiper() {
+    swiper = new Swiper('.swiper', {
+        direction: 'vertical',
+        slidesPerView: 1,
+        spaceBetween: 0,
+        mousewheel: true,
+        touchRatio: 1,
+        speed: 300,
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+        },
+        on: {
+            slideChange: function() {
+                currentVideoIndex = this.activeIndex;
+                updateProgress();
+                playCurrentVideo();
+                hideSwipeHint();
+            }
+        }
+    });
 }
 
 // تحميل الفيديوهات من مصادر متعددة
-async function loadTrending() {
+async function loadVideos() {
     if (isLoading) return;
     
-    const now = Date.now();
-    if (now - lastLoadTime < 10000) { // منع التحديث المتكرر
-        return;
-    }
-    
     isLoading = true;
-    lastLoadTime = now;
-    
-    const container = document.getElementById("videos");
-    const refreshBtn = document.getElementById("refreshBtn");
-    
-    container.innerHTML = `
-        <div class="loading">
-            <div class="spinner"></div>
-            <div>جاري تحميل أحدث الشورتات...</div>
-        </div>
-    `;
-    
-    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحديث';
-    refreshBtn.disabled = true;
+    showLoading(true);
     
     try {
-        // مصادر متعددة للترند (يمكن إضافة المزيد)
-        const sources = [
-            "https://api.allorigins.win/raw?url=https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-", // ترند يوتيوب
-            "https://api.allorigins.win/raw?url=https://www.youtube.com/feeds/videos.xml?playlist_id=PLirAqAtl_h2r5g8xGajEwdXd3x1sZh8hC", // ترند آخر
-        ];
+        // محاولة جلب فيديوهات حقيقية
+        let fetchedVideos = [];
         
-        let allVideos = [];
+        // 1. محاولة جلب من TikTok API
+        try {
+            const tiktokVideos = await fetchTikTokTrending();
+            fetchedVideos = fetchedVideos.concat(tiktokVideos);
+        } catch (error) {
+            console.warn('خطأ في جلب فيديوهات TikTok:', error);
+        }
         
-        // جلب الفيديوهات من جميع المصادر بالتوازي
-        const promises = sources.map(async (url, index) => {
-            try {
-                const res = await fetch(url);
-                const xml = await res.text();
-                const parser = new DOMParser();
-                const data = parser.parseFromString(xml, "text/xml");
-                const entries = data.getElementsByTagName("entry");
-                
-                // أخذ أول 4 فيديوهات من كل مصدر
-                for (let i = 0; i < Math.min(4, entries.length); i++) {
-                    const link = entries[i].getElementsByTagName("link")[0]?.getAttribute("href");
-                    const title = entries[i].getElementsByTagName("title")[0]?.textContent || "فيديو ترند";
-                    
-                    if (link && link.includes("youtube.com")) {
-                        allVideos.push({
-                            link: link.replace("watch?v=", "embed/"),
-                            title: title,
-                            source: index
-                        });
-                    }
-                }
-            } catch (e) {
-                console.warn(`خطأ في تحميل المصدر ${index}:`, e);
-            }
-        });
+        // 2. محاولة جلب من Instagram API
+        try {
+            const instagramVideos = await fetchInstagramTrending();
+            fetchedVideos = fetchedVideos.concat(instagramVideos);
+        } catch (error) {
+            console.warn('خطأ في جلب فيديوهات Instagram:', error);
+        }
         
-        await Promise.allSettled(promises);
+        // 3. محاولة جلب من YouTube Shorts
+        try {
+            const youtubeVideos = await fetchYouTubeShorts();
+            fetchedVideos = fetchedVideos.concat(youtubeVideos);
+        } catch (error) {
+            console.warn('خطأ في جلب فيديوهات YouTube:', error);
+        }
         
-        // خلط الفيديوهات عشوائياً
-        allVideos = shuffleArray(allVideos);
+        // إذا لم نتمكن من جلب فيديوهات، نستخدم البيانات التجريبية
+        if (fetchedVideos.length === 0) {
+            console.log('استخدام البيانات التجريبية');
+            videos = MOCK_VIDEOS;
+        } else {
+            videos = fetchedVideos.slice(0, 20); // تحديد الحد الأقصى للفيديوهات
+        }
         
         // عرض الفيديوهات
-        container.innerHTML = '';
-        
-        if (allVideos.length === 0) {
-            container.innerHTML = `
-                <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--accent); margin-bottom: 20px;"></i>
-                    <h3>⚠️ لم يتم تحميل أي فيديوهات</h3>
-                    <p>يرجى المحاولة مرة أخرى أو التحقق من اتصالك بالإنترنت</p>
-                </div>
-            `;
-        } else {
-            allVideos.forEach(video => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="trending-badge">🔥 ترند</div>
-                    <div class="video-container">
-                        <iframe 
-                            src="${video.link}?autoplay=0&modestbranding=1&rel=0" 
-                            allowfullscreen 
-                            loading="lazy"
-                            title="${video.title}">
-                        </iframe>
-                    </div>
-                    <div class="video-info">
-                        ${video.title.length > 50 ? video.title.substring(0, 50) + '...' : video.title}
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-        
-        // تحسين التحميل البطيء للصور
-        document.querySelectorAll('iframe').forEach(iframe => {
-            iframe.addEventListener('load', function() {
-                this.style.opacity = '1';
-            });
-        });
+        renderVideos();
         
     } catch (error) {
-        console.error('خطأ في تحميل الترند:', error);
-        container.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #ff4444; margin-bottom: 20px;"></i>
-                <h3>⚠️ خطأ أثناء تحميل الترند</h3>
-                <p>${error.message}</p>
-                <button class="toggle-btn" onclick="loadTrending()" style="margin-top: 20px;">
-                    <i class="fas fa-redo"></i> حاول مرة أخرى
-                </button>
-            </div>
-        `;
+        console.error('خطأ في تحميل الفيديوهات:', error);
+        showError('فشل في تحميل الفيديوهات. تحقق من اتصالك بالإنترنت.');
+        videos = MOCK_VIDEOS;
+        renderVideos();
     } finally {
         isLoading = false;
-        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> تحديث';
-        refreshBtn.disabled = false;
+        showLoading(false);
     }
 }
 
-// دالة لخلط المصفوفة عشوائياً
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-// تحميل الوضع المحفوظ
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'light') {
-    document.body.classList.add('light');
-}
-
-// التحميل التلقائي عند فتح الصفحة
-window.addEventListener('DOMContentLoaded', () => {
-    // تحميل الفيديوهات فوراً
-    loadTrending();
-    
-    // تحديث تلقائي كل 3 دقائق إذا كانت الصفحة مرئية
-    setInterval(() => {
-        if (!document.hidden && !isLoading) {
-            loadTrending();
+// محاكاة API لـ TikTok
+async function fetchTikTokTrending() {
+    // في الإنتاج الحقيقي، استخدم TikTok API
+    // هذه مجرد محاكاة للبيانات
+    return [
+        {
+            id: 'tiktok_1',
+            title: "ترند تيك توك الجديد 2024 🚀",
+            platform: "tiktok",
+            url: "https://www.tiktok.com/@user/video/7321234567890123456",
+            embedUrl: "https://www.tiktok.com/embed/v2/7321234567890123456",
+            views: "3.2M",
+            likes: "500K"
+        },
+        {
+            id: 'tiktok_2',
+            title: "تحدي الرقص مع الأصدقاء 💃",
+            platform: "tiktok",
+            url: "https://www.tiktok.com/@user/video/7329876543210987654",
+            embedUrl: "https://www.tiktok.com/embed/v2/7329876543210987654",
+            views: "4.5M",
+            likes: "720K"
         }
-    }, 3 * 60 * 1000);
+    ];
+}
+
+// محاكاة API لـ Instagram
+async function fetchInstagramTrending() {
+    // في الإنتاج الحقيقي، استخدم Instagram Graph API
+    return [
+        {
+            id: 'instagram_1',
+            title: "Reels مضحكة على الإنستجرام 😂",
+            platform: "instagram",
+            url: "https://www.instagram.com/reel/C5jK8XqgP9L/",
+            embedUrl: "https://www.instagram.com/reel/C5jK8XqgP9L/embed",
+            views: "1.2M",
+            likes: "180K"
+        },
+        {
+            id: 'instagram_2',
+            title: "تحدي الـ 24 ساعة على Reels ⏰",
+            platform: "instagram",
+            url: "https://www.instagram.com/reel/C5kL9YrhQ2M/",
+            embedUrl: "https://www.instagram.com/reel/C5kL9YrhQ2M/embed",
+            views: "2.1M",
+            likes: "310K"
+        }
+    ];
+}
+
+// جلب فيديوهات YouTube Shorts
+async function fetchYouTubeShorts() {
+    try {
+        const response = await fetch(
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(
+                'https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-'
+            )}`
+        );
+        const xml = await response.text();
+        const parser = new DOMParser();
+        const data = parser.parseFromString(xml, "text/xml");
+        const entries = data.getElementsByTagName("entry");
+        
+        const youtubeVideos = [];
+        for (let i = 0; i < Math.min(5, entries.length); i++) {
+            const title = entries[i].getElementsByTagName("title")[0]?.textContent || "فيديو يوتيوب";
+            const videoId = entries[i].getElementsByTagName("yt:videoId")[0]?.textContent;
+            
+            if (videoId) {
+                youtubeVideos.push({
+                    id: `youtube_${i}`,
+                    title: title,
+                    platform: "youtube",
+                    url: `https://www.youtube.com/shorts/${videoId}`,
+                    embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                    views: `${Math.floor(Math.random() * 5) + 1}M`,
+                    likes: `${Math.floor(Math.random() * 500) + 100}K`
+                });
+            }
+        }
+        return youtubeVideos;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// عرض الفيديوهات في Swiper
+function renderVideos() {
+    const swiperWrapper = document.getElementById('videoSwiper');
+    swiperWrapper.innerHTML = '';
+    
+    videos.forEach((video, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'swiper-slide';
+        
+        let platformClass = '';
+        switch(video.platform) {
+            case 'tiktok': platformClass = 'platform-tiktok'; break;
+            case 'instagram': platformClass = 'platform-instagram'; break;
+            case 'youtube': platformClass = 'platform-youtube'; break;
+        }
+        
+        slide.innerHTML = `
+            <div class="video-card">
+                <div class="video-player" id="videoPlayer_${index}">
+                    <iframe 
+                        class="video-frame"
+                        src="${video.embedUrl}?autoplay=0&mute=1&controls=0&modestbranding=1&rel=0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                        loading="lazy"
+                        title="${video.title}"
+                    ></iframe>
+                </div>
+                
+                <div class="video-overlay">
+                    <div class="video-title">${video.title}</div>
+                    <div class="video-meta">
+                        <span class="platform-badge ${platformClass}">
+                            <i class="fab fa-${video.platform}"></i>
+                            ${video.platform.charAt(0).toUpperCase() + video.platform.slice(1)}
+                        </span>
+                        <span><i class="far fa-eye"></i> ${video.views}</span>
+                        <span><i class="far fa-heart"></i> ${video.likes}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        swiperWrapper.appendChild(slide);
+    });
+    
+    // إعادة تهيئة Swiper
+    if (swiper) {
+        swiper.destroy();
+    }
+    initSwiper();
+    playCurrentVideo();
+}
+
+// تشغيل الفيديو الحالي
+function playCurrentVideo() {
+    // إيقاف جميع الفيديوهات
+    document.querySelectorAll('iframe').forEach(iframe => {
+        iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+    });
+    
+    // تشغيل الفيديو الحالي
+    const currentIframe = document.querySelector(`#videoPlayer_${currentVideoIndex} iframe`);
+    if (currentIframe) {
+        const src = currentIframe.src;
+        if (isMuted) {
+            currentIframe.src = src.replace(/mute=\d/, 'mute=1');
+        } else {
+            currentIframe.src = src.replace(/mute=\d/, 'mute=0');
+        }
+        
+        // محاولة تشغيل الفيديو
+        setTimeout(() => {
+            currentIframe.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        }, 300);
+    }
+}
+
+// تحديث شريط التقدم
+function updateProgress() {
+    const progress = ((currentVideoIndex + 1) / videos.length) * 100;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+}
+
+// تبديل الوضع
+function toggleTheme() {
+    document.body.classList.toggle('light');
+    const themeIcon = document.querySelector('[onclick="toggleTheme()"] i');
+    if (document.body.classList.contains('light')) {
+        themeIcon.className = 'fas fa-sun';
+    } else {
+        themeIcon.className = 'fas fa-moon';
+    }
+    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+}
+
+// تبديل كتم الصوت
+function toggleMute() {
+    isMuted = !isMuted;
+    const muteBtn = document.getElementById('muteBtn');
+    muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+    playCurrentVideo();
+}
+
+// إخفاء تلميحة السحب
+function hideSwipeHint() {
+    const hint = document.getElementById('swipeHint');
+    hint.style.opacity = '0';
+    setTimeout(() => {
+        hint.style.display = 'none';
+    }, 300);
+}
+
+// عرض/إخفاء شاشة التحميل
+function showLoading(show) {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (show) {
+        loadingScreen.style.display = 'flex';
+    } else {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 300);
+    }
+}
+
+// عرض خطأ
+function showError(message) {
+    const errorHTML = `
+        <div class="error-screen">
+            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--accent);"></i>
+            <h3>⚠️ ${message}</h3>
+            <button class="icon-btn" onclick="location.reload()" style="margin-top: 20px;">
+                <i class="fas fa-redo"></i> إعادة تحميل
+            </button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', errorHTML);
+}
+
+// تحديث الفيديوهات
+function refreshVideos() {
+    if (isLoading) return;
+    
+    const refreshBtn = document.getElementById('refreshBtn');
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    refreshBtn.disabled = true;
+    
+    setTimeout(() => {
+        loadVideos();
+        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        refreshBtn.disabled = false;
+    }, 500);
+}
+
+// وظائف أزرار التحكم
+function likeVideo() {
+    const likeBtn = document.querySelector('.action-btn:nth-child(1) i');
+    likeBtn.className = 'fas fa-heart';
+    likeBtn.style.color = '#ff0050';
+    
+    // إظهار رسالة
+    showToast('تمت الإعجاب بالفيديو ❤️');
+}
+
+function shareVideo() {
+    if (navigator.share) {
+        navigator.share({
+            title: videos[currentVideoIndex]?.title || 'شورت ترند',
+            url: videos[currentVideoIndex]?.url || window.location.href
+        });
+    } else {
+        navigator.clipboard.writeText(videos[currentVideoIndex]?.url || window.location.href);
+        showToast('تم نسخ الرابط 📋');
+    }
+}
+
+function downloadVideo() {
+    showToast('جاري تحميل الفيديو... ⬇️');
+    // في الإنتاج الحقيقي، ستضيف منطق تحميل الفيديو هنا
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--accent);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        z-index: 10000;
+        font-size: 14px;
+        animation: fadeInOut 2s ease-in-out;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+
+// التهيئة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    // تحميل الوضع المحفوظ
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light');
+        document.querySelector('[onclick="toggleTheme()"] i').className = 'fas fa-sun';
+    }
+    
+    // تهيئة Swiper
+    initSwiper();
+    
+    // تحميل الفيديوهات
+    loadVideos();
+    
+    // إخفاء التلميحة بعد 5 ثواني
+    setTimeout(hideSwipeHint, 5000);
+    
+    // تحديث الفيديوهات كل 5 دقائق
+    setInterval(() => {
+        if (!document.hidden && videos.length > 0) {
+            refreshVideos();
+        }
+    }, 5 * 60 * 1000);
 });
 
-// تحسين الأداء عند التبديل بين التبويبات
+// التعامل مع تغيير رؤية الصفحة
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && Date.now() - lastLoadTime > cacheDuration) {
-        loadTrending();
+    if (document.hidden) {
+        // إيقاف الفيديو عند ترك الصفحة
+        document.querySelectorAll('iframe').forEach(iframe => {
+            iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        });
+    } else {
+        // تشغيل الفيديو عند العودة
+        playCurrentVideo();
     }
 });
 </script>
 
 </body>
-</html>
+    </html>
