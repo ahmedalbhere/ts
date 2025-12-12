@@ -1,150 +1,105 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TS - Shorts Viewer</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TS - Ultra Fast Shorts</title>
 
 <style>
     :root {
-        --bg: #000;
-        --text: #fff;
-        --accent: #0f9dff;
-    }
-    body.light {
-        --bg: #fff;
-        --text: #000;
+        --bg:#000;
+        --text:#fff;
     }
     body {
         margin:0;
         background:var(--bg);
         color:var(--text);
-        height:100vh;
         overflow:hidden;
-        font-family:Arial;
+        height:100vh;
+        font-family: Arial;
+    }
+
+    #videoPlayer {
+        width:100%;
+        height:100vh;
+        border:none;
     }
 
     header {
         position:fixed;
-        top:0; left:0; right:0;
-        padding:12px 20px;
-        display:flex;
-        justify-content:space-between;
-        z-index:999;
-        background:rgba(0,0,0,0.4);
-        backdrop-filter:blur(3px);
-    }
-    .logo {
-        font-size:22px;
-        font-weight:bold;
-        color:var(--accent);
-    }
-    .toggle {
-        background:var(--accent);
-        color:#fff;
-        padding:6px 12px;
-        border:none;
-        border-radius:8px;
-        font-weight:bold;
-    }
-
-    #viewer {
-        height:100vh;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-    }
-
-    iframe {
-        width:100%;
-        height:100%;
-        border:none;
+        top:0;left:0;right:0;
+        padding:10px 15px;
+        font-size:20px;
+        color:#0f9dff;
+        z-index:100;
     }
 </style>
 </head>
 
 <body>
 
-<header>
-    <div class="logo">TS</div>
-    <button class="toggle" onclick="toggleTheme()">☀/🌙</button>
-</header>
+<header>TS</header>
 
-<div id="viewer">
-    <iframe id="player" allowfullscreen></iframe>
-</div>
+<iframe id="videoPlayer" allowfullscreen></iframe>
 
 <script>
-// ======================
-// 1- تبديل الوضع
-// ======================
-function toggleTheme(){
-    document.body.classList.toggle("light");
-}
-
-// ======================
-// 2- جلب الترند من RSS
-// ======================
 let videos = [];
 let index = 0;
 
-async function load() {
-    try {
-        const url = "https://api.allorigins.win/raw?url=https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-";
-        const res = await fetch(url);
-        const xml = await res.text();
+// تحميل سريع بدون إعلانات
+async function loadVideos(){
+    const rssURL =
+      "https://api.codetabs.com/v1/proxy/?quest=https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-";
+    
+    let res = await fetch(rssURL);
+    let xml = await res.text();
 
-        const parser = new DOMParser();
-        const data = parser.parseFromString(xml, "text/xml");
+    let parser = new DOMParser();
+    let data = parser.parseFromString(xml,"text/xml");
 
-        const entries = data.getElementsByTagName("entry");
+    let entries = data.getElementsByTagName("entry");
 
-        for (let i = 0; i < entries.length; i++) {
-            const link = entries[i].getElementsByTagName("link")[0].getAttribute("href");
-            const embed = link.replace("watch?v=", "embed/");
-            videos.push(embed);
-        }
-
-        showVideo(0);
-
-    } catch (err) {
-        alert("خطأ في تحميل الفيديوهات");
+    for(let i=0;i<entries.length;i++){
+        let link = entries[i].getElementsByTagName("link")[0].getAttribute("href");
+        videos.push(link.replace("watch?v=","embed/"));
     }
+
+    document.getElementById("videoPlayer").src = videos[0];
 }
 
-// ======================
-// 3- عرض فيديو واحد
-// ======================
-function showVideo(i){
-    index = i;
-    document.getElementById("player").src = videos[i];
-}
-
-// ======================
-// 4- السحب مثل تيك توك
-// ======================
+// سحب مثل تيك توك — سريع جدًا
 let startY = 0;
 
-document.addEventListener("touchstart", e=>{
-    startY = e.touches[0].clientY;
+document.addEventListener("touchstart", e => {
+  startY = e.touches[0].clientY;
 });
 
-document.addEventListener("touchend", e=>{
-    let endY = e.changedTouches[0].clientY;
+document.addEventListener("touchend", e => {
+  let endY = e.changedTouches[0].clientY;
 
-    if(startY - endY > 50){
-        // سحب لأعلى = التالي
-        if(index < videos.length - 1) showVideo(index + 1);
-    }
-
-    if(endY - startY > 50){
-        // سحب لأسفل = السابق
-        if(index > 0) showVideo(index - 1);
-    }
+  if(startY - endY > 50){
+    nextVideo();
+  }
+  if(endY - startY > 50){
+    prevVideo();
+  }
 });
 
-// بدء التشغيل
-load();
+function nextVideo(){
+    if(index < videos.length - 1){
+        index++;
+        document.getElementById("videoPlayer").src = videos[index];
+    }
+}
+
+function prevVideo(){
+    if(index > 0){
+        index--;
+        document.getElementById("videoPlayer").src = videos[index];
+    }
+}
+
+loadVideos();
 </script>
 
 </body>
